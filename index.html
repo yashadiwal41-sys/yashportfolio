@@ -27,7 +27,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="preload" as="image" href="images/yash.png">
 <style>
 /* ==========================================================
    Yudhveer Singh | Graphic Designer Portfolio
@@ -262,7 +261,7 @@ ul{list-style:none}
       <p class="avail"><span class="dot" aria-hidden="true"></span>Available for freelance, internship and project work</p>
       <h1 id="hero-title"><span class="sr">Yudhveer Singh, </span><span class="kick">GRAPHIC</span><span class="title">DESIGNER</span></h1>
 
-      <div class="me"><img src="images/yash.png" alt="Portrait of Yudhveer Singh, graphic designer" width="800" height="1200" fetchpriority="high" decoding="async"></div>
+      <div class="me"><img id="heroImg" src="images/yash.png" alt="Portrait of Yudhveer Singh, graphic designer" width="800" height="1200" fetchpriority="high" decoding="async"></div>
 
       <div class="card intro">
         <p class="card-t">Hi, I'm Yudhveer Singh</p>
@@ -387,8 +386,9 @@ ul{list-style:none}
   /* 1. PROJECTS --------------------------------------------------
      Format: [image name, title, category]
      Put the image in the "images" folder. The name can be written
-     without an extension (jpg, jpeg, png, webp, avif are checked),
-     or with one, e.g. "cleartrip.png", to load it directly. */
+     without an extension. The loader tries many variations
+     (lowercase, Capitalised, spaces, underscores, JPG/PNG etc.)
+     so small naming mistakes still work on the live server. */
   var CATEGORIES = {
     branding: "Branding",
     poster: "Posters",
@@ -425,7 +425,7 @@ ul{list-style:none}
     ["xtro-eris", "Xtro Eris", "other"]
   ];
 
-  var EXTENSIONS = ["jpg", "jpeg", "png", "webp", "avif"];
+  var EXTENSIONS = ["jpg", "jpeg", "png", "webp", "avif", "JPG", "JPEG", "PNG", "WEBP", "jfif", "gif", "svg"];
 
   /* 2. WORK GRID ------------------------------------------------- */
   var grid = $("#grid");
@@ -433,24 +433,52 @@ ul{list-style:none}
   var items = [];
 
   function loadImage(img, holder, name) {
-    var tries = name.indexOf(".") > -1 ? [name] : EXTENSIONS.map(function (e) { return name + "." + e; });
+    var bases = [name];
+    if (name.indexOf(".") === -1) {
+      var spaced = name.replace(/-/g, " ");
+      var title = spaced.replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+      bases = [
+        name,
+        name.replace(/-/g, "_"),
+        spaced,
+        title,
+        title.replace(/ /g, "-"),
+        title.replace(/ /g, "_")
+      ];
+    }
+    var tries = [];
+    bases.forEach(function (b) {
+      if (b.indexOf(".") > -1) { tries.push(b); }
+      else { EXTENSIONS.forEach(function (e) { tries.push(b + "." + e); }); }
+    });
     var i = 0;
     function next() {
       if (i >= tries.length) {
         img.remove();
         var ph = document.createElement("span");
         ph.className = "ph";
-        ph.textContent = "Image not found: images/" + name + ".jpg / .png / .webp";
+        ph.textContent = "Image not found: images/" + name;
         holder.appendChild(ph);
         holder.parentNode.setAttribute("data-missing", "true");
         if (window.console) { console.warn("Portfolio: no image found for 'images/" + name + "'"); }
         return;
       }
-      img.src = "images/" + tries[i++];
+      img.src = "images/" + encodeURI(tries[i++]);
     }
     img.addEventListener("error", next);
     next();
   }
+
+  /* Hero photo: try other common names if yash.png is not found */
+  (function () {
+    var hero = $("#heroImg");
+    if (!hero) { return; }
+    var alt = ["images/Yash.png", "images/yash.jpg", "images/yash.jpeg", "images/yash.webp", "images/Yash.jpg", "images/Yash.jpeg", "images/yash.PNG", "images/yash.JPG"];
+    var n = 0;
+    hero.addEventListener("error", function () {
+      if (n < alt.length) { hero.src = alt[n++]; }
+    });
+  })();
 
   PROJECTS.forEach(function (p) {
     var li = document.createElement("li");
